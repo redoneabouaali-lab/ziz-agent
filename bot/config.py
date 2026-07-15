@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+# Also load from persistent storage volume (Coolify / Docker)
+load_dotenv('/data/.env')
 
 
 def _env(key: str, default: str = "") -> str:
