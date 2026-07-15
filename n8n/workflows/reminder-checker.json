@@ -1,0 +1,36 @@
+{
+  "name": "ZIZ Reminder Checker (24/7)",
+  "nodes": [
+    {
+      "id": "trigger-schedule",
+      "name": "Every Minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 1 }]
+        }
+      }
+    },
+    {
+      "id": "code-check",
+      "name": "Check & Send",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "parameters": {
+        "jsCode": "// ZIZ Reminder Checker — runs every 1 minute\n// Fetches due reminders from PostgreSQL and sends Telegram\n\nconst { Pool } = require('pg');\n\nconst pool = new Pool({\n  host: '{{$vars.DB_HOST || \"postgres\"}}',\n  port: {{$vars.DB_PORT || 5432}},\n  database: '{{$vars.DB_NAME || \"ziz_agent\"}}',\n  user: '{{$vars.DB_USER || \"ziz\"}}',\n  password: '{{$vars.DB_PASSWORD}}',\n});\n\nconst tg_token = '{{$vars.TG_TOKEN}}';\n\nasync function main() {\n  const client = await pool.connect();\n  try {\n    // Get due reminders\n    const res = await client.query(\n      \"SELECT id, chat_id, message FROM reminders WHERE sent = 0 AND remind_at <= NOW() ORDER BY remind_at ASC\"\n    );\n    \n    if (res.rows.length === 0) {\n      return [{ result: 'no_reminders' }];\n    }\n\n    const results = [];\n    for (const row of res.rows) {\n      try {\n        // Send Telegram message\n        var tgResp = await this.helpers.request({\n          method: 'POST',\n          uri: 'https://api.telegram.org/bot' + tg_token + '/sendMessage',\n          body: {\n            chat_id: String(row.chat_id),\n            text: '🔔 *Rappel ZIZ:*\\\\n' + (row.message || ''),\n            parse_mode: 'Markdown'\n          },\n          json: true\n        });\n        \n        if (tgResp && tgResp.ok) {\n          // Mark as sent\n          await client.query(\"UPDATE reminders SET sent = 1, sent_at = NOW() WHERE id = $1\", [row.id]);\n          results.push({ id: row.id, chat_id: row.chat_id, ok: true });\n        }\n      } catch(e) {\n        results.push({ id: row.id, error: e.message || 'Unknown' });\n      }\n    }\n    return results;\n  } finally {\n    client.release();\n    await pool.end();\n  }\n}\n\nreturn await main();"
+      }
+    }
+  ],
+  "connections": {
+    "Every Minute": {
+      "main": [[{ "node": "Check & Send", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "active": true
+}

@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ziz_agent
+      POSTGRES_USER: ziz
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ziz -d ziz_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    restart: always
+    ports:
+      - "${API_PORT:-5679}:5679"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ziz_agent
+      DB_USER: ziz
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      TG_TOKEN: ${TG_TOKEN}
+      NV_API_KEY: ${NV_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      WA_URL: ${WA_URL}
+      WA_API_KEY: ${WA_API_KEY}
+      WA_SESSION: ${WA_SESSION:-default}
+      WA_PHONE: ${WA_PHONE}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      EMAIL_TO: ${EMAIL_TO}
+      API_PORT: "${API_PORT:-5679}"
+      COMPANIES: "${COMPANIES:-ZIZPHYTOSERVICE,HB ADRAR}"
+      CURRENT_COMPANY: "${CURRENT_COMPANY:-ZIZPHYTOSERVICE}"
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      N8N_REMINDER_URL: ${N8N_REMINDER_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
