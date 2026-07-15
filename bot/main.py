@@ -54,12 +54,17 @@ def main():
     logger.info("=" * 50)
 
     # ── Initialize database ──
-    try:
-        init_db()
-        logger.info("Database initialized")
-    except Exception as e:
-        logger.error(f"Database init failed: {e}")
-        sys.exit(1)
+    for attempt in range(30):
+        try:
+            init_db()
+            logger.info("Database initialized")
+            break
+        except Exception as e:
+            logger.warning(f"Database init attempt {attempt+1}/30 failed: {e}")
+            time.sleep(2)
+    else:
+        logger.error("Database init failed after 30 attempts — continuing without DB")
+
 
     # ── Start threads ──
     threads = []
