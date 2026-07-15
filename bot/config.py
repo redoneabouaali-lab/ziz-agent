@@ -24,7 +24,10 @@ DSN = f"host={DB_HOST} port={DB_PORT} dbname={DB_NAME} user={DB_USER} password={
 TG_TOKEN = _env("TG_TOKEN")
 
 # ── AI / LLM ──
-NV_API_KEY = _env("NV_API_KEY")
+LLM_PROVIDER = _env("LLM_PROVIDER", "gemini")  # gemini or nvidia
+GEMINI_API_KEY = _env("GEMINI_API_KEY")
+GEMINI_MODEL = _env("GEMINI_MODEL", "gemini-2.0-flash")
+NV_API_KEY = _env("NV_API_KEY")  # kept as fallback
 GROQ_API_KEY = _env("GROQ_API_KEY")
 NV_MODEL = _env("NV_MODEL", "meta/llama-3.3-70b-instruct")
 NV_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
